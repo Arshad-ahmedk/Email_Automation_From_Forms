@@ -1,5 +1,6 @@
 # Email_Automation
-This repository contains a Google Apps Script that automates the process of sending personalized emails to participants who register for an event.
+This repository contains a Google Apps Script that automates the process of sending personalized emails to participants who register through google forms
+
 ## Features
 - Automatically sends personalized emails upon form submission.
 - Updates the "Mail Status" column in the Google Sheet.
