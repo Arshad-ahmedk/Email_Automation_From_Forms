@@ -1,0 +1,72 @@
+var EMAIL_SUBJECT = 'Thank You for Registering, {name}!';
+var SENDER_EMAIL = Session.getActiveUser().getEmail();  
+var SENDER_NAME = "Event Team";  
+
+/**
+ * Sends a personalized email for each form response.
+ *
+ * @param {Object} e - Form submit event
+ */
+function onFormSubmit(e) {
+  var responses = e.namedValues;
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]; // Get column headers
+  var mailStatusCol = headers.indexOf("Mail Status") + 1; // Find "Mail Status" column index (1-based)
+
+  if (!responses['Email Address'] || !responses['Email Address'][0]) {
+    Logger.log('No email provided.');
+    return;
+  }
+
+  var email = responses['Email Address'][0].trim();
+  var name = responses['Name'] ? responses['Name'][0].trim() : 'Participant';
+
+  Logger.log('Sending email to: ' + name + ' (' + email + ')');
+
+  Utilities.sleep(2000); // Prevents Gmail spam filters
+
+  GmailApp.sendEmail(email, EMAIL_SUBJECT.replace('{name}', name), "", {  
+    htmlBody: createEmailBody(name),  
+    from: SENDER_EMAIL,  
+    name: SENDER_NAME,  
+    replyTo: SENDER_EMAIL  
+  });
+
+  Logger.log('Email sent to: ' + email);
+
+  var lastRow = sheet.getLastRow(); // Get last filled row
+  
+  // If "Mail Status" column is not found, create it
+  if (mailStatusCol === 0) {
+    sheet.getRange(1, sheet.getLastColumn() + 1).setValue("Mail Status");
+    mailStatusCol = sheet.getLastColumn();
+  }
+
+  // Update the "Mail Status" column for the last row
+  sheet.getRange(lastRow, mailStatusCol).setValue('Email Sent');
+}
+
+/**
+ * Creates a personalized email body using the participant's name.
+ * 
+ * @param {string} name - The participant's name.
+ * @return {string} - The email body as an HTML string.
+ */
+function createEmailBody(name) {
+  var calendarLink = "https://www.google.com/calendar/render?action=TEMPLATE&text=Event&dates=YYYYMMDDTHHMMSSZ/YYYYMMDDTHHMMSSZ&details=Join%20us%20for%20the%20event.&location=Event%20Venue&trp=true";
+
+  return `
+    <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+      <h2 style="color: #2c3e50;">Hello ${name},</h2>
+      <p>Thank you for registering for our event! We are excited to have you join us.</p>
+      <p><strong>Event Date:</strong> [Event Date]<br><strong>Venue:</strong> <a href="[Venue Link]" style="color: #3498db; text-decoration: none;">Event Venue</a></p>
+      <p><strong>Note:</strong> Event details will be shared closer to the date.</p>
+      <p>If you have any questions, feel free to reach out to our coordinators.</p>
+      <p><strong>Stay updated!</strong> by following us on:<br><a href="[Instagram Link]" style="color: #3498db; text-decoration: none;">Instagram</a><br><a href="[LinkedIn Link]" style="color: #3498db; text-decoration: none;">LinkedIn</a></p>
+      <p>Looking forward to seeing you at our event!</p>
+      <p><a href="${calendarLink}" style="background-color: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; display: inline-block;">Add to Calendar</a></p>
+      <p>Stay tuned for further updates.</p>
+      <p>Best regards,<br><strong>Event Team</strong></p>
+    </div>
+  `;
+}
